@@ -1,0 +1,47 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ticket_system
+      POSTGRES_USER: ticket_user
+      POSTGRES_PASSWORD: ticket123
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ticket_user -d ticket_system"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build:
+      context: ./tecnologistik
+      dockerfile: Dockerfile
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DB_URL: jdbc:postgresql://db:5432/ticket_system
+      DB_USERNAME: ticket_user
+      DB_PASSWORD: ticket123
+    ports:
+      - "8081:8081"
+
+  frontend-admin:
+    build:
+      context: ./tecnologistik/tecnologistik-front
+      dockerfile: Dockerfile
+    ports:
+      - "5173:80"
+
+  frontend-tickets:
+    build:
+      context: ./tickets-front
+      dockerfile: Dockerfile
+    ports:
+      - "5174:80"
+
+volumes:
+  postgres_data:
